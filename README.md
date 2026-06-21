@@ -1,6 +1,6 @@
 # AtonementRail
 
-Addon WoW Retail pour afficher une barre verticale d'Expiation sur les frames Blizzard de groupe.
+Addon WoW Retail pour afficher une barre d'Expiation sur les frames Blizzard de groupe.
 
 ## Installation
 
