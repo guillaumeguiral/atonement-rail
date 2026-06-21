@@ -1,0 +1,9 @@
+## Interface: 120007
+## Title: AtonementRail
+## Notes: Barre d'Expiation pour les frames Blizzard de groupe.
+## Author: Guillaume
+## Version: 1.0.0
+## SavedVariables: AtonementRailDB
+
+Core.lua
+Options.lua
