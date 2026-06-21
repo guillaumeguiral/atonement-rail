@@ -23,6 +23,7 @@ World of Warcraft\_retail_\Interface\AddOns\AtonementRail\AtonementRail.toc
 - Choisir ou placer la barre quand le groupe est vertical : `Droite` par defaut, ou `Gauche`.
 - Choisir ou placer la barre quand le groupe est horizontal : `Haut` par defaut, ou `Bas`.
 - Choisir la texture de la barre. `Aucune / pleine` utilise une barre solide sans texture.
+- Choisir le style de barre : `Classique` par defaut, ou `Bordure + padding` pour ajouter 2px de padding et un bord discret.
 - Activer `Mode test` pour afficher les barres sans Expiation active.
 - Commandes slash : `/atonementrail` ou `/arail`.
 

@@ -6,11 +6,13 @@ local widthSlider
 local verticalSideDropdown
 local horizontalSideDropdown
 local textureDropdown
+local skinDropdown
 local testModeCheck
 local optionsCategory
 
 local DEFAULT_BAR_WIDTH = 8
 local DEFAULT_BAR_TEXTURE = "solid"
+local DEFAULT_BAR_SKIN = "flat"
 local DEFAULT_VERTICAL_SIDE = "right"
 local DEFAULT_HORIZONTAL_SIDE = "top"
 local VERTICAL_SIDE_OPTIONS = {
@@ -25,6 +27,10 @@ local TEXTURE_OPTIONS = {
     { value = "solid", label = "Aucune / pleine" },
     { value = "blizzard", label = "Blizzard" },
     { value = "smooth", label = "Lisse" },
+}
+local SKIN_OPTIONS = {
+    { value = "flat", label = "Classique" },
+    { value = "paddedBorder", label = "Bordure + padding" },
 }
 
 local function SetText(widget, text)
@@ -102,6 +108,7 @@ local function RefreshControls()
     SetDropdownText(verticalSideDropdown, VERTICAL_SIDE_OPTIONS, db.verticalSide, "Droite")
     SetDropdownText(horizontalSideDropdown, HORIZONTAL_SIDE_OPTIONS, db.horizontalSide, "Haut")
     SetDropdownText(textureDropdown, TEXTURE_OPTIONS, db.barTexture, "Aucune / pleine")
+    SetDropdownText(skinDropdown, SKIN_OPTIONS, db.barSkin, "Classique")
 end
 
 local function CreateOptionsPanel()
@@ -170,8 +177,14 @@ local function CreateOptionsPanel()
 
     textureDropdown = CreateDropdown("AtonementRailTextureDropdown", panel, textureLabel, TEXTURE_OPTIONS, "barTexture", "Aucune / pleine", 180)
 
+    local skinLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    skinLabel:SetPoint("TOPLEFT", textureDropdown, "BOTTOMLEFT", 16, -18)
+    skinLabel:SetText("Style de barre")
+
+    skinDropdown = CreateDropdown("AtonementRailSkinDropdown", panel, skinLabel, SKIN_OPTIONS, "barSkin", "Classique", 180)
+
     testModeCheck = CreateFrame("CheckButton", "AtonementRailTestModeCheckButton", panel, "InterfaceOptionsCheckButtonTemplate")
-    testModeCheck:SetPoint("TOPLEFT", textureDropdown, "BOTTOMLEFT", 14, -18)
+    testModeCheck:SetPoint("TOPLEFT", skinDropdown, "BOTTOMLEFT", 14, -18)
     testModeCheck.Label = testModeCheck.Text or _G[testModeCheck:GetName() .. "Text"]
     SetText(testModeCheck.Label, "Mode test")
     testModeCheck.tooltipText = "Affiche les barres sur les frames visibles sans Expiation active."
@@ -199,6 +212,7 @@ local function CreateOptionsPanel()
 
         db.barWidth = DEFAULT_BAR_WIDTH
         db.barTexture = DEFAULT_BAR_TEXTURE
+        db.barSkin = DEFAULT_BAR_SKIN
         db.verticalSide = DEFAULT_VERTICAL_SIDE
         db.horizontalSide = DEFAULT_HORIZONTAL_SIDE
         db.testMode = false

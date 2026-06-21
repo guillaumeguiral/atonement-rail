@@ -8,10 +8,11 @@ local UPDATE_INTERVAL = 0.08
 local DEFAULTS = {
     barWidth = 8,
     barTexture = "solid",
+    barSkin = "flat",
     verticalSide = "right",
     horizontalSide = "top",
     testMode = false,
-    defaultsVersion = 4,
+    defaultsVersion = 5,
 }
 
 local BAR_TEXTURES = {
@@ -28,6 +29,17 @@ local VALID_VERTICAL_SIDES = {
 local VALID_HORIZONTAL_SIDES = {
     top = true,
     bottom = true,
+}
+
+local BAR_SKINS = {
+    flat = {
+        padding = 0,
+        border = false,
+    },
+    paddedBorder = {
+        padding = 2,
+        border = true,
+    },
 }
 
 local UNITS = {
@@ -221,10 +233,8 @@ local function GetPreferredFrame(unit)
 end
 
 local function CreateBar(frame)
-    local bar = CreateFrame("StatusBar", nil, frame)
-    bar:SetMinMaxValues(0, 1)
-    bar:SetValue(0)
-    bar:SetOrientation("VERTICAL")
+    local template = BackdropTemplateMixin and "BackdropTemplate" or nil
+    local bar = CreateFrame("Frame", nil, frame, template)
     bar:SetFrameLevel((frame:GetFrameLevel() or 0) + 6)
     bar:Hide()
 
@@ -233,6 +243,15 @@ local function CreateBar(frame)
     background:SetColorTexture(0, 0, 0, 0.35)
     bar.background = background
 
+    local status = CreateFrame("StatusBar", nil, bar)
+    status:SetMinMaxValues(0, 1)
+    status:SetValue(0)
+    status:SetOrientation("VERTICAL")
+    status:SetFrameLevel(bar:GetFrameLevel() + 1)
+    status:SetAllPoints()
+    status:Show()
+    bar.status = status
+
     barsByFrame[frame] = bar
     return bar
 end
@@ -240,6 +259,11 @@ end
 local function GetBarTexturePath()
     local db = AtonementRailDB or DEFAULTS
     return BAR_TEXTURES[db.barTexture] or BAR_TEXTURES[DEFAULTS.barTexture]
+end
+
+local function GetBarSkin()
+    local db = AtonementRailDB or DEFAULTS
+    return BAR_SKINS[db.barSkin] or BAR_SKINS[DEFAULTS.barSkin]
 end
 
 local function GetResolvedLayout()
@@ -267,19 +291,49 @@ local function GetResolvedLayout()
 end
 
 local function ApplyBarTexture(bar)
-    bar:SetStatusBarTexture(GetBarTexturePath())
+    bar.status:SetStatusBarTexture(GetBarTexturePath())
+end
+
+local function ApplyBarSkin(bar)
+    local skin = GetBarSkin()
+    local padding = skin.padding or 0
+
+    bar.status:ClearAllPoints()
+    if padding > 0 then
+        bar.status:SetPoint("TOPLEFT", bar, "TOPLEFT", padding, -padding)
+        bar.status:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -padding, padding)
+    else
+        bar.status:SetAllPoints()
+    end
+
+    if skin.border and bar.SetBackdrop then
+        bar:SetBackdrop({
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            edgeSize = 6,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        bar:SetBackdropBorderColor(0, 0, 0, 0.45)
+        bar.background:SetAlpha(1)
+    else
+        if bar.SetBackdrop then
+            bar:SetBackdrop(nil)
+        end
+        bar.background:SetAlpha(1)
+    end
 end
 
 local function PositionBar(frame, bar)
     local db = AtonementRailDB or DEFAULTS
     local thickness = Clamp(db.barWidth or DEFAULTS.barWidth, 4, 30)
+    local skin = GetBarSkin()
+    local outerThickness = thickness + ((skin.padding or 0) * 2)
     local layout = GetResolvedLayout()
 
     bar:ClearAllPoints()
 
     if layout == "horizontal" then
-        bar:SetOrientation("HORIZONTAL")
-        bar:SetHeight(thickness)
+        bar.status:SetOrientation("HORIZONTAL")
+        bar:SetHeight(outerThickness)
 
         if db.horizontalSide == "bottom" then
             bar:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, -2)
@@ -289,8 +343,8 @@ local function PositionBar(frame, bar)
             bar:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, 2)
         end
     else
-        bar:SetOrientation("VERTICAL")
-        bar:SetWidth(thickness)
+        bar.status:SetOrientation("VERTICAL")
+        bar:SetWidth(outerThickness)
 
         if db.verticalSide == "left" then
             bar:SetPoint("TOPRIGHT", frame, "TOPLEFT", -2, 0)
@@ -309,6 +363,7 @@ local function GetBar(frame)
 
     local bar = barsByFrame[frame] or CreateBar(frame)
     ApplyBarTexture(bar)
+    ApplyBarSkin(bar)
     PositionBar(frame, bar)
     return bar
 end
@@ -318,7 +373,7 @@ local function SetBarColor(bar, ratio)
     local g = emptyColor.g + ((fullColor.g - emptyColor.g) * ratio)
     local b = emptyColor.b + ((fullColor.b - emptyColor.b) * ratio)
 
-    bar:SetStatusBarColor(r, g, b, 1)
+    bar.status:SetStatusBarColor(r, g, b, 1)
 end
 
 local function HideUnit(unit)
@@ -404,6 +459,7 @@ end
 function AtonementRail:ApplySettings()
     for frame, bar in pairs(barsByFrame) do
         ApplyBarTexture(bar)
+        ApplyBarSkin(bar)
         PositionBar(frame, bar)
     end
 
@@ -432,7 +488,7 @@ function AtonementRail:UpdateVisibleBars()
                 bar:Hide()
             end
         elseif AtonementRailDB.testMode then
-            bar:SetValue(1)
+            bar.status:SetValue(1)
             SetBarColor(bar, 1)
             bar:Show()
         elseif not aura or not aura.expirationTime or not aura.duration or aura.duration <= 0 then
@@ -443,7 +499,7 @@ function AtonementRail:UpdateVisibleBars()
                 HideUnit(unit)
             else
                 local ratio = Clamp(remaining / aura.duration, 0, 1)
-                bar:SetValue(ratio)
+                bar.status:SetValue(ratio)
                 SetBarColor(bar, ratio)
                 bar:Show()
             end
@@ -499,6 +555,12 @@ function AtonementRail:Initialize()
     AtonementRailDB.barWidth = Clamp(tonumber(AtonementRailDB.barWidth) or DEFAULTS.barWidth, 4, 30)
     if not BAR_TEXTURES[AtonementRailDB.barTexture] then
         AtonementRailDB.barTexture = DEFAULTS.barTexture
+    end
+    if AtonementRailDB.barSkin == "paddedRounded" then
+        AtonementRailDB.barSkin = "paddedBorder"
+    end
+    if not BAR_SKINS[AtonementRailDB.barSkin] then
+        AtonementRailDB.barSkin = DEFAULTS.barSkin
     end
     if not VALID_VERTICAL_SIDES[AtonementRailDB.verticalSide] then
         AtonementRailDB.verticalSide = DEFAULTS.verticalSide
